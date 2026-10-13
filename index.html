@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>今日決定：午餐輪盤</title>
+  <title>今晚吃什麼：晚餐輪盤</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,17 +14,33 @@
       -webkit-tap-highlight-color: transparent;
       touch-action: manipulation;
     }
-    /* 自訂黑白灰滾動條 */
     ::-webkit-scrollbar {
       width: 4px;
       height: 4px;
     }
     ::-webkit-scrollbar-track {
-      background: #18181b;
+      background: #09090b;
     }
     ::-webkit-scrollbar-thumb {
-      background: #3f3f46;
+      background: #27272a;
       border-radius: 9999px;
+    }
+    @keyframes cardFlyIn {
+      0% {
+        opacity: 0;
+        transform: translateY(60px) scale(0.92);
+      }
+      60% {
+        opacity: 1;
+        transform: translateY(-6px) scale(1.02);
+      }
+      100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+    .animate-card-fly-in {
+      animation: cardFlyIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
     }
   </style>
 </head>
@@ -32,18 +48,21 @@
 
   <header class="w-full px-5 pt-5 pb-3 border-b border-zinc-800/80 backdrop-blur-sm sticky top-0 z-20 bg-zinc-950/90 flex justify-between items-center">
     <div>
-      <h1 class="text-base font-semibold tracking-wider uppercase text-zinc-100">今日決定</h1>
-      <p class="text-xs text-zinc-400" id="currentDateDisplay">載入日期中...</p>
+      <div class="flex items-center gap-2">
+        <span class="inline-block w-2 h-2 rounded-full bg-zinc-400"></span>
+        <h1 class="text-base font-semibold tracking-wider uppercase text-zinc-100">今晚吃什麼</h1>
+      </div>
+      <p class="text-xs text-zinc-400 mt-0.5" id="currentDateDisplay">載入日期中...</p>
     </div>
     <div class="flex items-center gap-2">
-      <button id="toggleFilterBtn" class="text-xs px-3 py-1.5 rounded-full border border-zinc-700 bg-zinc-900 text-zinc-300 active:scale-95 transition-all">
-        篩選候選清單 (<span id="activeCountBadge">12</span>)
+      <button id="toggleFilterBtn" class="text-xs px-3.5 py-1.5 rounded-full border border-zinc-700 bg-zinc-900/90 hover:bg-zinc-800 text-zinc-300 active:scale-95 transition-all">
+        晚餐選項 (<span id="activeCountBadge">12</span>)
       </button>
     </div>
   </header>
 
   <main class="flex-1 flex flex-col items-center justify-center px-4 py-4 w-full max-w-md mx-auto relative overflow-hidden">
-    <!-- 輪盤指示指針 (頂部箭頭) -->
+    <!-- 輪盤頂部指示指針 -->
     <div class="relative flex flex-col items-center">
       <div class="z-10 -mb-3.5 flex flex-col items-center drop-shadow-md">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none" class="text-white transform rotate-180">
@@ -51,38 +70,38 @@
         </svg>
       </div>
 
-      <!-- Canvas 輪盤外框與畫布 -->
+      <!-- Canvas 輪盤外框 -->
       <div class="relative p-2 rounded-full border border-zinc-800 bg-zinc-900 shadow-2xl shadow-black/80">
         <canvas id="wheelCanvas" width="340" height="340" class="block rounded-full"></canvas>
-        <!-- 輪盤中央裝飾圓心鈕 -->
+        <!-- 中央軸心 -->
         <div class="absolute inset-0 m-auto w-12 h-12 rounded-full bg-zinc-950 border-2 border-zinc-700 flex items-center justify-center shadow-inner pointer-events-none">
           <div class="w-3.5 h-3.5 rounded-full bg-zinc-300"></div>
         </div>
       </div>
     </div>
 
-    <!-- 啟動抽籤大按鈕 -->
+    <!-- 啟動按鈕群 -->
     <div class="w-full max-w-xs mt-7">
       <button id="spinBtn" class="w-full py-4 rounded-2xl bg-zinc-100 text-zinc-950 font-semibold text-base tracking-widest uppercase hover:bg-white active:scale-95 transition-all shadow-lg shadow-white/5 disabled:opacity-40 disabled:cursor-not-allowed">
-        開始決定
+        決定今晚吃什麼
       </button>
       <div class="flex justify-between items-center mt-3 px-2">
         <button id="autoFilterToggle" class="text-xs text-zinc-400 hover:text-zinc-200 transition-colors flex items-center gap-1.5">
-          <span id="autoFilterDot" class="w-2 h-2 rounded-full bg-emerald-400"></span>
-          <span>自動排除今日公休</span>
+          <span id="autoFilterDot" class="w-2 h-2 rounded-full bg-emerald-400 transition-colors"></span>
+          <span>排除今日公休店家</span>
         </button>
         <span id="statusInfo" class="text-xs text-zinc-500 font-mono">準備就緒</span>
       </div>
     </div>
   </main>
 
-  <div id="drawerOverlay" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-30 opacity-0 pointer-events-none transition-opacity duration-300"></div>
-  <div id="filterDrawer" class="fixed bottom-0 inset-x-0 max-w-md mx-auto bg-zinc-900 border-t border-zinc-800 rounded-t-3xl z-40 p-5 transform translate-y-full transition-transform duration-300 max-h-[82vh] flex flex-col">
+  <div id="drawerOverlay" class="fixed inset-0 bg-black/75 backdrop-blur-sm z-30 opacity-0 pointer-events-none transition-opacity duration-300"></div>
+  <div id="filterDrawer" class="fixed bottom-0 inset-x-0 max-w-md mx-auto bg-zinc-900 border-t border-zinc-800 rounded-t-3xl z-40 p-5 transform translate-y-full transition-transform duration-300 max-h-[82vh] flex flex-col shadow-2xl">
     <div class="w-12 h-1.5 bg-zinc-700 rounded-full mx-auto mb-4"></div>
     <div class="flex justify-between items-center pb-3 border-b border-zinc-800">
       <div>
-        <h2 class="text-sm font-semibold tracking-wide text-zinc-100">餐廳候選清單</h2>
-        <p class="text-xs text-zinc-400 mt-0.5">點擊切換是否加入輪盤</p>
+        <h2 class="text-sm font-semibold tracking-wide text-zinc-100">晚餐候選名單</h2>
+        <p class="text-xs text-zinc-400 mt-0.5">點擊店家可切換是否加入輪盤</p>
       </div>
       <button id="closeDrawerBtn" class="p-2 text-zinc-400 hover:text-white rounded-full">
         <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -91,38 +110,46 @@
       </button>
     </div>
 
-    <!-- 列表容器 -->
-    <div id="restaurantList" class="flex-1 overflow-y-auto divide-y divide-zinc-800/60 my-2 pr-1">
-      <!-- 動態插入名單項目 -->
-    </div>
+    <!-- 清單容器 -->
+    <div id="restaurantList" class="flex-1 overflow-y-auto divide-y divide-zinc-800/60 my-2 pr-1"></div>
 
     <div class="pt-3 border-t border-zinc-800 flex gap-2">
-      <button id="selectAllBtn" class="flex-1 py-2.5 rounded-xl border border-zinc-700 text-xs font-medium text-zinc-300 hover:bg-zinc-800">全選</button>
-      <button id="resetOffDaysBtn" class="flex-1 py-2.5 rounded-xl border border-zinc-700 text-xs font-medium text-zinc-300 hover:bg-zinc-800">依公休重設</button>
-      <button id="drawerDoneBtn" class="flex-1 py-2.5 rounded-xl bg-zinc-200 text-zinc-900 text-xs font-medium hover:bg-white">完成</button>
+      <button id="selectAllBtn" class="flex-1 py-2.5 rounded-xl border border-zinc-700 text-xs font-medium text-zinc-300 hover:bg-zinc-800 active:scale-95 transition-all">全選</button>
+      <button id="resetOffDaysBtn" class="flex-1 py-2.5 rounded-xl border border-zinc-700 text-xs font-medium text-zinc-300 hover:bg-zinc-800 active:scale-95 transition-all">依公休排外</button>
+      <button id="drawerDoneBtn" class="flex-1 py-2.5 rounded-xl bg-zinc-200 text-zinc-900 text-xs font-medium hover:bg-white active:scale-95 transition-all">完成</button>
     </div>
   </div>
 
   <div id="resultModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md opacity-0 pointer-events-none transition-opacity duration-300">
-    <div class="bg-zinc-900 border border-zinc-700 w-full max-w-sm rounded-3xl p-6 shadow-2xl transform scale-95 transition-transform duration-300 text-center flex flex-col items-center">
-      <div class="w-12 h-12 rounded-full bg-zinc-800 border border-zinc-600 flex items-center justify-center mb-4 text-zinc-300">
+    <div id="resultCard" class="bg-zinc-900 border border-zinc-700 w-full max-w-sm rounded-3xl p-6 shadow-2xl text-center flex flex-col items-center">
+      <div class="w-12 h-12 rounded-full bg-zinc-800 border border-zinc-600 flex items-center justify-center mb-4 text-zinc-300 shadow-inner">
+        <!-- 晚餐碗筷/餐具圖示 -->
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          <path d="M18 2v6a3 3 0 0 1-3 3 3 3 0 0 1-3-3V2"></path>
+          <path d="M15 2v10"></path>
+          <path d="M15 12v10"></path>
+          <path d="M6 2v20"></path>
+          <path d="M9 2c0 2.5-1.5 5-3 5"></path>
         </svg>
       </div>
-      <p class="text-xs uppercase tracking-widest text-zinc-400 font-mono">今日午餐推薦</p>
-      <h2 id="resultName" class="text-2xl font-bold text-zinc-100 my-2">--</h2>
-      <div id="resultOffDays" class="text-xs px-3 py-1 bg-zinc-800/90 text-zinc-400 rounded-full border border-zinc-700/80 mb-6">公休資訊</div>
+
+      <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-zinc-800 text-[11px] font-mono tracking-wider uppercase text-zinc-300 border border-zinc-700">
+        <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+        今晚首選推薦
+      </div>
+
+      <h2 id="resultName" class="text-2xl font-bold text-zinc-100 mt-3 mb-2 tracking-tight">--</h2>
+      <div id="resultOffDays" class="text-xs px-3 py-1.5 bg-zinc-950/70 text-zinc-400 rounded-xl border border-zinc-800 mb-6">公休資訊</div>
       
       <div class="flex flex-col gap-2.5 w-full">
-        <a id="resultMapLink" href="#" target="_blank" rel="noopener noreferrer" class="w-full py-3.5 rounded-xl bg-zinc-100 text-zinc-950 font-medium text-sm flex items-center justify-center gap-2 hover:bg-white active:scale-95 transition-all">
+        <a id="resultMapLink" href="#" target="_blank" rel="noopener noreferrer" class="w-full py-3.5 rounded-xl bg-zinc-100 text-zinc-950 font-medium text-sm flex items-center justify-center gap-2 hover:bg-white active:scale-95 transition-all shadow-md">
           <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
           </svg>
-          Google 地圖導航
+          開啟 Google Maps 導航
         </a>
-        <button id="closeResultBtn" class="w-full py-3 rounded-xl border border-zinc-700 text-zinc-400 text-sm font-medium hover:text-zinc-200 hover:bg-zinc-800 active:scale-95 transition-all">
+        <button id="closeResultBtn" class="w-full py-3 rounded-xl border border-zinc-700 text-zinc-300 text-sm font-medium hover:text-white hover:bg-zinc-800 active:scale-95 transition-all">
           再轉一次
         </button>
       </div>
@@ -130,23 +157,23 @@
   </div>
 
   <script>
-    // 依據圖片內容建立餐廳資料庫
+    // 晚餐候選名單與營業公休資料庫
     const rawRestaurants = [
       { id: 1, name: "小文魯肉飯", offDaysText: "每周二", offDays: [2], mapUrl: "https://maps.app.goo.gl/FQJm4oyZxQvJ4URP9" },
       { id: 2, name: "美珠土雞店", offDaysText: "每周一", offDays: [1], mapUrl: "https://maps.app.goo.gl/eKQf2tdJ2MgBzZvy6" },
       { id: 3, name: "漫食雞肉飯", offDaysText: "每周日", offDays: [0], mapUrl: "https://maps.app.goo.gl/YWo4zuGXm3ZsgkK57" },
       { id: 4, name: "紅豆坊", offDaysText: "每周三", offDays: [3], mapUrl: "https://maps.app.goo.gl/bhS9sp4nL8uArMxt7" },
       { id: 5, name: "羅國夫排骨", offDaysText: "每周日", offDays: [0], mapUrl: "https://maps.app.goo.gl/zfBSQ5TaczYegFkn9" },
-      { id: 6, name: "安一路潤餅", offDaysText: "每周日", offDays: [0], mapUrl: "https://maps.app.goo.gl/cJpSs62FhobeE3R8p9" },
+      { id: 6, name: "安一路潤餅", offDaysText: "每周日", offDays: [0], mapUrl: "https://maps.app.goo.gl/cjpSs62Fhobe3R8p9" },
       { id: 7, name: "悟饕", offDaysText: "每周六、日", offDays: [6, 0], mapUrl: "https://maps.app.goo.gl/gpnmc8AQxjry1kWq5" },
       { id: 8, name: "富貴元", offDaysText: "每周六、日", offDays: [6, 0], mapUrl: "https://maps.app.goo.gl/Ucpk7wCT9TqH5vEAA" },
       { id: 9, name: "鼎好便當", offDaysText: "每周六、日", offDays: [6, 0], mapUrl: "https://maps.app.goo.gl/zCys5rVh8WV7DB3R9" },
       { id: 10, name: "刈包四神湯", offDaysText: "每周日", offDays: [0], mapUrl: "https://maps.app.goo.gl/UmSirTxPCfa8sqmp8" },
-      { id: 11, name: "八方雲集", offDaysText: "無公休", offDays: [], mapUrl: "https://maps.app.goo.gl/tU6kfJRvzYPkLWAS6" },
-      { id: 12, name: "連記蚵仔麵線肉圓", offDaysText: "每周日", offDays: [0], mapUrl: "https://maps.app.goo.gl/td1pgH2h7n3faT747" }
+      { id: 11, name: "八方雲集", offDaysText: "無公休", offDays: [], mapUrl: "https://maps.app.goo.gl/tU6kfJRvzYPKLWAS6" },
+      { id: 12, name: "連記蚵仔麵線肉圓", offDaysText: "每周日", offDays: [0], mapUrl: "https://maps.app.goo.gl/td1pghH2h7n3faT747" }
     ];
 
-    // 黑白灰調色板 (輪盤扇區交替)
+    // 黑白灰調色盤 (扇區交錯設計)
     const grayPalette = [
       "#18181b", // zinc-900
       "#27272a", // zinc-800
@@ -158,11 +185,11 @@
     // 全局狀態
     let activeRestaurants = [];
     let autoExcludeOff = true;
-    let currentAngle = 0; // 弧度
+    let currentAngle = 0;
     let isSpinning = false;
     let targetResult = null;
 
-    // DOM 元素
+    // DOM 元素引用
     const canvas = document.getElementById("wheelCanvas");
     const ctx = canvas.getContext("2d");
     const spinBtn = document.getElementById("spinBtn");
@@ -179,6 +206,7 @@
     const selectAllBtn = document.getElementById("selectAllBtn");
     const resetOffDaysBtn = document.getElementById("resetOffDaysBtn");
     const resultModal = document.getElementById("resultModal");
+    const resultCard = document.getElementById("resultCard");
     const resultName = document.getElementById("resultName");
     const resultOffDays = document.getElementById("resultOffDays");
     const resultMapLink = document.getElementById("resultMapLink");
@@ -187,15 +215,13 @@
 
     // 日期計算
     const today = new Date();
-    const dayOfWeek = today.getDay(); // 0 是週日, 1-6 是週一到六
+    const dayOfWeek = today.getDay();
     const dayNames = ["週日", "週一", "週二", "週三", "週四", "週五", "週六"];
 
     function initDate() {
-      const formattedDate = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日 (${dayNames[dayOfWeek]})`;
-      currentDateDisplay.textContent = formattedDate;
+      currentDateDisplay.textContent = `${today.getFullYear()}年${today.getMonth() + 1}月${today.getDate()}日 (${dayNames[dayOfWeek]}) 晚餐`;
     }
 
-    // 依今日公休自動篩選
     function applyAutoFilter() {
       if (autoExcludeOff) {
         activeRestaurants = rawRestaurants.filter(r => !r.offDays.includes(dayOfWeek));
@@ -207,16 +233,16 @@
 
     function updateUI() {
       activeCountBadge.textContent = activeRestaurants.length;
-      statusInfo.textContent = `${activeRestaurants.length} 間參與中`;
+      statusInfo.textContent = `${activeRestaurants.length} 間晚餐候選`;
       renderDrawerList();
       drawWheel();
 
       if (activeRestaurants.length === 0) {
         spinBtn.disabled = true;
-        spinBtn.textContent = "無可選項目";
+        spinBtn.textContent = "請至少選取一間餐廳";
       } else {
         spinBtn.disabled = isSpinning;
-        spinBtn.textContent = isSpinning ? "旋轉中..." : "開始決定";
+        spinBtn.textContent = isSpinning ? "旋轉決定中..." : "決定今晚吃什麼";
       }
     }
 
@@ -224,7 +250,6 @@
       const dpr = window.devicePixelRatio || 1;
       const size = 340;
       
-      // 確保高解析螢幕清晰度
       canvas.width = size * dpr;
       canvas.height = size * dpr;
       canvas.style.width = `${size}px`;
@@ -238,7 +263,7 @@
 
       const count = activeRestaurants.length;
       if (count === 0) {
-        ctx.fillStyle = "#27272a";
+        ctx.fillStyle = "#18181b";
         ctx.beginPath();
         ctx.arc(center, center, radius, 0, 2 * Math.PI);
         ctx.fill();
@@ -246,13 +271,12 @@
         ctx.font = "14px 'Noto Sans TC', sans-serif";
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillText("請至少勾選一家餐廳", center, center);
+        ctx.fillText("請點擊右上角加入晚餐選項", center, center);
         return;
       }
 
       const arc = (2 * Math.PI) / count;
 
-      // 繪製扇區
       for (let i = 0; i < count; i++) {
         const angle = currentAngle + i * arc;
         const color = grayPalette[i % grayPalette.length];
@@ -264,12 +288,10 @@
         ctx.lineTo(center, center);
         ctx.fill();
 
-        // 扇形格線
         ctx.strokeStyle = "#09090b";
         ctx.lineWidth = 1.5;
         ctx.stroke();
 
-        // 繪製文字 (沿半徑放置)
         ctx.save();
         ctx.fillStyle = (i % 2 === 0) ? "#f4f4f5" : "#e4e4e7";
         ctx.font = "500 13px 'Noto Sans TC', sans-serif";
@@ -278,7 +300,6 @@
         ctx.textAlign = "right";
         ctx.textBaseline = "middle";
 
-        // 長文字裁切處理
         let label = activeRestaurants[i].name;
         if (label.length > 7 && count > 8) {
           label = label.substring(0, 6) + "..";
@@ -302,32 +323,26 @@
       isSpinning = true;
       spinBtn.disabled = true;
       spinBtn.textContent = "挑選中...";
-      statusInfo.textContent = "命運指針旋轉中";
+      statusInfo.textContent = "晚餐指針轉動中";
 
-      // 隨機選定中獎項目
       const count = activeRestaurants.length;
       const winningIndex = Math.floor(Math.random() * count);
       targetResult = activeRestaurants[winningIndex];
 
       const arc = (2 * Math.PI) / count;
-      // 輪盤指針在正頂端：頂端弧度在 3*PI/2 (或 -PI/2)
-      // 若第 i 個扇區中獎，其中心角度 (currentAngle + i * arc + arc / 2) 最終必須停在 3*PI/2
-      // 目標 targetCurrentAngle % 2PI = (1.5 * PI - (winningIndex * arc + arc / 2)) % 2PI
       const targetSectorCenter = winningIndex * arc + arc / 2;
-      const pointerAngle = (3 * Math.PI) / 2; // 頂端
+      const pointerAngle = (3 * Math.PI) / 2; // 指標在頂端
       let targetMod = (pointerAngle - targetSectorCenter) % (2 * Math.PI);
       if (targetMod < 0) targetMod += 2 * Math.PI;
 
-      // 增加5到8圈旋轉以產生良好視覺效果
       const totalRotations = Math.floor(Math.random() * 3 + 5) * (2 * Math.PI);
       const startAngle = currentAngle;
-      // 計算終點角度
       const currentMod = startAngle % (2 * Math.PI);
       let deltaAngle = targetMod - currentMod;
       if (deltaAngle < 0) deltaAngle += 2 * Math.PI;
       const endAngle = startAngle + totalRotations + deltaAngle;
 
-      const duration = 4000; // 4秒
+      const duration = 3800;
       const startTime = performance.now();
 
       function easeOutCubic(t) {
@@ -349,29 +364,31 @@
           drawWheel();
           isSpinning = false;
           spinBtn.disabled = false;
-          spinBtn.textContent = "開始決定";
-          statusInfo.textContent = "抽籤完成";
-          showResult(targetResult);
+          spinBtn.textContent = "決定今晚吃什麼";
+          statusInfo.textContent = "已決定晚餐！";
+          showFlyInCard(targetResult);
         }
       }
 
       requestAnimationFrame(animateSpin);
     }
 
-    function showResult(restaurant) {
+    function showFlyInCard(restaurant) {
       resultName.textContent = restaurant.name;
-      resultOffDays.textContent = `公休時間：${restaurant.offDaysText}`;
+      const isOffToday = restaurant.offDays.includes(dayOfWeek);
+      resultOffDays.textContent = `公休日：${restaurant.offDaysText}${isOffToday ? '（今日可能未營業）' : ''}`;
       resultMapLink.href = restaurant.mapUrl;
 
+      // 觸發飛入動畫
+      resultCard.classList.remove("animate-card-fly-in");
+      void resultCard.offsetWidth; // 重置動畫關鍵幀
+      resultCard.classList.add("animate-card-fly-in");
+
       resultModal.classList.remove("opacity-0", "pointer-events-none");
-      resultModal.firstElementChild.classList.remove("scale-95");
-      resultModal.firstElementChild.classList.add("scale-100");
     }
 
     function closeResult() {
       resultModal.classList.add("opacity-0", "pointer-events-none");
-      resultModal.firstElementChild.classList.add("scale-95");
-      resultModal.firstElementChild.classList.remove("scale-100");
     }
 
     function renderDrawerList() {
@@ -394,7 +411,7 @@
               <div class="text-xs text-zinc-500 font-mono">${res.offDaysText}</div>
             </div>
           </div>
-          <a href="${res.mapUrl}" target="_blank" onclick="event.stopPropagation()" class="p-2 text-zinc-500 hover:text-zinc-200" title="地圖">
+          <a href="${res.mapUrl}" target="_blank" onclick="event.stopPropagation()" class="p-2 text-zinc-500 hover:text-zinc-200" title="在 Google Maps 查看">
             <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"/>
             </svg>
@@ -424,7 +441,6 @@
       filterDrawer.classList.add("translate-y-full");
     }
 
-    // 事件監聽綁定
     toggleFilterBtn.addEventListener("click", openDrawer);
     closeDrawerBtn.addEventListener("click", closeDrawer);
     drawerDoneBtn.addEventListener("click", closeDrawer);
@@ -456,7 +472,6 @@
       }
     });
 
-    // 鍵盤空白鍵亦可觸發抽籤
     window.addEventListener("keydown", (e) => {
       if (e.code === "Space" && !isSpinning && resultModal.classList.contains("opacity-0")) {
         e.preventDefault();
@@ -464,7 +479,6 @@
       }
     });
 
-    // 啟動初始化
     window.onload = function() {
       initDate();
       applyAutoFilter();
